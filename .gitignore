@@ -1,4 +1,18 @@
-salon_booking.sql
-backend/.env
+# Dependencies
+node_modules/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Database backup / local SQL files
 salon_booking.sql
 salon_booking_backup.sql
+
+# Uploads
+uploads/
+
+# Logs
+*.log
+npm-debug.log*
