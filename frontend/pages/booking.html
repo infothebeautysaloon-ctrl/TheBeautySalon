@@ -1634,6 +1634,109 @@ button{cursor:pointer}
 }
 </style>
 
+<style id="weekly-offer-lightbox-final-fix">
+/* WEEKLY OFFER IMAGE LIGHTBOX - FINAL DESKTOP + MOBILE FIX */
+
+.offer-image {
+    cursor: zoom-in !important;
+}
+
+.offer-lightbox {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 99999 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 30px !important;
+    background: rgba(0, 0, 0, 0.94) !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    transition: opacity .25s ease, visibility .25s ease !important;
+}
+
+.offer-lightbox.show {
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+}
+
+.offer-lightbox img {
+    display: block !important;
+    max-width: min(1100px, 92vw) !important;
+    max-height: 88vh !important;
+    width: auto !important;
+    height: auto !important;
+    object-fit: contain !important;
+    border: 1px solid rgba(212, 175, 55, .7) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 25px 80px rgba(0, 0, 0, .7) !important;
+}
+
+.offer-lightbox-close {
+    position: absolute !important;
+    top: 22px !important;
+    right: 25px !important;
+    width: 44px !important;
+    height: 44px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    border: 1px solid #d4af37 !important;
+    border-radius: 50% !important;
+    background: rgba(0, 0, 0, .85) !important;
+    color: #d4af37 !important;
+    font-size: 18px !important;
+    cursor: pointer !important;
+    z-index: 2 !important;
+}
+
+.offer-lightbox-close:hover {
+    background: #d4af37 !important;
+    color: #000 !important;
+}
+
+.offer-lightbox-caption {
+    position: absolute !important;
+    bottom: 20px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    max-width: 90vw !important;
+    color: #d4af37 !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    letter-spacing: 1px !important;
+    text-align: center !important;
+    white-space: nowrap !important;
+}
+
+@media (max-width: 767px) {
+    .offer-lightbox {
+        padding: 15px !important;
+    }
+
+    .offer-lightbox img {
+        max-width: 94vw !important;
+        max-height: 82vh !important;
+        border-radius: 8px !important;
+    }
+
+    .offer-lightbox-close {
+        top: 15px !important;
+        right: 15px !important;
+        width: 40px !important;
+        height: 40px !important;
+    }
+
+    .offer-lightbox-caption {
+        bottom: 12px !important;
+        font-size: 11px !important;
+    }
+}
+</style>
+
 </head>
 
 <body>
@@ -2654,13 +2757,20 @@ document.addEventListener("DOMContentLoaded", function () {
         try {
             const result = await getJson(API + "/services");
             const rows = Array.isArray(result) ? result : (result.data || result.services || []);
+            const selectedCategory = category.value.toLowerCase().trim();
 
             const filteredRows = rows.filter(function (item) {
                 const active = item.is_active === undefined || Number(item.is_active) === 1;
                 const itemBranch = item.branch_id === null || item.branch_id === undefined || item.branch_id === ""
                     ? null
                     : Number(item.branch_id);
-                return active && (itemBranch === null || itemBranch === Number(branchId));
+                const itemCategory =
+                    String(item.category || "").toLowerCase().trim();
+
+                const categoryMatch =
+                    !selectedCategory ||
+                    itemCategory === selectedCategory;
+                return active && (itemBranch === null || itemBranch === Number(branchId)) && categoryMatch;
             });
 
             service.innerHTML = "";
@@ -2730,6 +2840,20 @@ document.addEventListener("DOMContentLoaded", function () {
             loadServices(this.value),
             loadStaff(this.value)
         ]);
+        refreshAvailableTimeSlots();
+    });
+
+    category.addEventListener("change", function () {
+        clearMessage();
+
+        if (!branch.value) {
+            setSelectLoading(service, "Select branch first");
+            return;
+        }
+
+        service.value = "";
+        loadServices(branch.value);
+
         refreshAvailableTimeSlots();
     });
 

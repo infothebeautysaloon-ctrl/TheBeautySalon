@@ -24,13 +24,14 @@ const {
 // SERVICE IMAGE DIRECTORY
 // =====================================================
 
-const SERVICE_IMAGE_DIR = path.resolve(
+// Store uploaded service images inside backend/uploads/services
+const SERVICE_IMAGE_DIR = path.join(
     __dirname,
-    "../../frontend/assets/images/services"
+    "../uploads/services"
 );
 
 
-// Create directory if not exists
+// Create directory if it does not exist
 fs.mkdirSync(
     SERVICE_IMAGE_DIR,
     {
@@ -43,122 +44,120 @@ fs.mkdirSync(
 // MULTER STORAGE
 // =====================================================
 
-const storage =
-    multer.diskStorage({
+const storage = multer.diskStorage({
 
-        destination:
-            (req, file, cb) => {
+    destination: (req, file, cb) => {
 
-                cb(
-                    null,
-                    SERVICE_IMAGE_DIR
-                );
+        cb(
+            null,
+            SERVICE_IMAGE_DIR
+        );
 
-            },
+    },
 
+    filename: (req, file, cb) => {
 
-        filename:
-            (req, file, cb) => {
-
-                const ext =
-                    path.extname(
-                        file.originalname
-                    ).toLowerCase();
+        const extension =
+            path
+                .extname(file.originalname)
+                .toLowerCase();
 
 
-                const base =
-                    path
-                        .basename(
-                            file.originalname,
-                            ext
-                        )
-                        .replace(
-                            /[^a-zA-Z0-9-_]/g,
-                            "-"
-                        )
-                        .replace(
-                            /-+/g,
-                            "-"
-                        )
-                        .replace(
-                            /^-|-$/g,
-                            ""
-                        )
-                        .toLowerCase();
+        const originalName =
+            path
+                .basename(
+                    file.originalname,
+                    extension
+                )
+                .replace(
+                    /[^a-zA-Z0-9-_]/g,
+                    "-"
+                )
+                .replace(
+                    /-+/g,
+                    "-"
+                )
+                .replace(
+                    /^-|-$/g,
+                    ""
+                )
+                .toLowerCase();
 
 
-                const uniqueName =
-                    `${Date.now()}-${Math.round(
-                        Math.random() * 1e9
-                    )}-${base || "service"}${ext}`;
+        const filename =
+            `${Date.now()}-${Math.round(
+                Math.random() * 1e9
+            )}-${originalName || "service"}${extension}`;
 
 
-                cb(
-                    null,
-                    uniqueName
-                );
+        cb(
+            null,
+            filename
+        );
 
-            }
+    }
 
-    });
+});
+
+
+// =====================================================
+// FILE FILTER
+// =====================================================
+
+const fileFilter = (req, file, cb) => {
+
+    const allowedMimeTypes = [
+
+        "image/jpeg",
+        "image/png",
+        "image/webp",
+        "image/gif"
+
+    ];
+
+
+    if (
+        !allowedMimeTypes.includes(
+            file.mimetype
+        )
+    ) {
+
+        return cb(
+            new Error(
+                "Only JPG, PNG, WEBP and GIF images are allowed."
+            )
+        );
+
+    }
+
+
+    cb(
+        null,
+        true
+    );
+
+};
 
 
 // =====================================================
 // MULTER UPLOAD
 // =====================================================
 
-const upload =
-    multer({
+const upload = multer({
 
-        storage,
+    storage,
 
-        limits: {
+    fileFilter,
 
-            fileSize:
-                5 * 1024 * 1024
+    limits: {
 
-        },
+        // Maximum 5 MB per image
+        fileSize:
+            5 * 1024 * 1024
 
+    }
 
-        fileFilter:
-            (req, file, cb) => {
-
-                const allowed = [
-
-                    "image/jpeg",
-
-                    "image/png",
-
-                    "image/webp",
-
-                    "image/gif"
-
-                ];
-
-
-                if (
-                    !allowed.includes(
-                        file.mimetype
-                    )
-                ) {
-
-                    return cb(
-                        new Error(
-                            "Only JPG, PNG, WEBP and GIF images are allowed."
-                        )
-                    );
-
-                }
-
-
-                cb(
-                    null,
-                    true
-                );
-
-            }
-
-    });
+});
 
 
 // =====================================================

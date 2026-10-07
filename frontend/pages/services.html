@@ -3347,9 +3347,10 @@ html, body {
 
                     // Backend stores only the uploaded filename in service_image.
                     // The backend serves frontend/assets through /assets.
-                    const rawImage = String(service.service_image || "").trim();
+                   const rawImage = String(service.service_image || "").trim();
 
                     let imageUrl = "";
+
                     if (rawImage) {
                         const cleanImage = rawImage
                             .replace(/\\/g, "/")
@@ -3357,7 +3358,8 @@ html, body {
                             .replace(/^assets\\/i, "")
                             .replace(/^\/+/g, "");
 
-                        imageUrl = `https://thebeautysalon.onrender.com/assets/images/services/${encodeURIComponent(cleanImage)}`;
+                        imageUrl =
+                            `https://thebeautysalon.onrender.com/uploads/services/${encodeURIComponent(cleanImage)}`;
                     }
 
                     const imageBlock = imageUrl

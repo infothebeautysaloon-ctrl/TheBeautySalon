@@ -2378,24 +2378,32 @@ document.addEventListener("DOMContentLoaded", function () {
             staff_name: raw.staff_name ?? raw.staff ?? ""
         };
     }
-
-    const SERVICE_IMAGE_PATH = "../assets/images/services/";
+    const SERVICE_IMAGE_PATH =
+        "https://thebeautysalon.onrender.com/uploads/services/";
 
     function getServiceImageUrl(imagePath) {
         if (!imagePath) return "";
 
         const value = String(imagePath).trim();
 
-        if (/^(https?:|data:|blob:|\/)/i.test(value)) {
+        if (/^(https?:|data:|blob:)/i.test(value)) {
             return value;
+        }
+
+        if (value.startsWith("/uploads/services/")) {
+            return "https://thebeautysalon.onrender.com" + value;
+        }
+
+        if (value.startsWith("uploads/services/")) {
+            return "https://thebeautysalon.onrender.com/" + value;
         }
 
         if (value.startsWith("../assets/images/services/")) {
-            return value;
+            return SERVICE_IMAGE_PATH + value.split("/").pop();
         }
 
         if (value.startsWith("assets/images/services/")) {
-            return "../" + value;
+            return SERVICE_IMAGE_PATH + value.split("/").pop();
         }
 
         return SERVICE_IMAGE_PATH + value.split("/").pop();

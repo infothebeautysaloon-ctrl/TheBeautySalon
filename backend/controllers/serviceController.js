@@ -7,9 +7,9 @@ const path = require("path");
 // SERVICE IMAGE DIRECTORY
 // =====================================================
 
-const SERVICE_IMAGE_DIR = path.resolve(
+const SERVICE_IMAGE_DIR = path.join(
     __dirname,
-    "../../frontend/assets/images/services"
+    "../uploads/services"
 );
 
 
