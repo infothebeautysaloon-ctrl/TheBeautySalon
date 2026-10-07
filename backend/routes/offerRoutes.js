@@ -5,7 +5,6 @@ const fs = require("fs");
 
 const router = express.Router();
 
-
 const {
     getAllOffers,
     getTodayOffer,
@@ -25,12 +24,14 @@ const uploadDirectory = path.join(
 );
 
 
-if (!fs.existsSync(uploadDirectory)) {
+/* =========================================================
+   CREATE UPLOAD DIRECTORY IF NOT EXISTS
+========================================================= */
 
+if (!fs.existsSync(uploadDirectory)) {
     fs.mkdirSync(uploadDirectory, {
         recursive: true
     });
-
 }
 
 
@@ -49,7 +50,6 @@ const storage = multer.diskStorage({
 
     },
 
-
     filename: (req, file, cb) => {
 
         const day = String(
@@ -58,11 +58,9 @@ const storage = multer.diskStorage({
             .trim()
             .toLowerCase();
 
-
         const extension = path
             .extname(file.originalname)
             .toLowerCase();
-
 
         cb(
             null,
@@ -88,16 +86,12 @@ const fileFilter = (req, file, cb) => {
         ".gif"
     ];
 
-
     const extension = path
         .extname(file.originalname)
         .toLowerCase();
 
-
     if (
-        allowedExtensions.includes(
-            extension
-        )
+        allowedExtensions.includes(extension)
     ) {
 
         cb(null, true);
@@ -116,7 +110,7 @@ const fileFilter = (req, file, cb) => {
 
 
 /* =========================================================
-   MULTER
+   MULTER CONFIGURATION
 ========================================================= */
 
 const upload = multer({
@@ -136,7 +130,6 @@ const upload = multer({
    ROUTES
 ========================================================= */
 
-
 /*
    IMPORTANT:
    /today MUST COME BEFORE /:day
@@ -148,11 +141,15 @@ router.get(
 );
 
 
+/* GET ALL OFFERS */
+
 router.get(
     "/",
     getAllOffers
 );
 
+
+/* GET OFFER BY DAY */
 
 router.get(
     "/:day",
@@ -160,12 +157,16 @@ router.get(
 );
 
 
+/* CREATE / UPDATE OFFER IMAGE */
+
 router.put(
     "/:day",
     upload.single("image"),
     saveOffer
 );
 
+
+/* DELETE OFFER IMAGE + DATABASE RECORD */
 
 router.delete(
     "/:day",

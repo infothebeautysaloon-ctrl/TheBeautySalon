@@ -2417,35 +2417,10 @@
 
 
             <div class="about-branch-container" id="aboutBranchesGrid">
-                <article class="about-branch-card featured">
-                    <div class="about-branch-top">
-                        <span class="about-branch-badge">MAIN BRANCH</span>
-                        <i class="fa-solid fa-location-dot"></i>
-                    </div>
-                    <h3>The Beauty Salon</h3>
-                    <h4>Baramati</h4>
-                    <p>Near Mahanagar Bank, in front of Shayog Society, Baramati, Maharashtra.</p>
-                    <div class="about-branch-info">
-                        <span><i class="fa-solid fa-phone"></i>+91 8793465001</span>
-                        <span><i class="fa-regular fa-envelope"></i>beautysalon@gamil.com</span>
-                        <span><i class="fa-regular fa-clock"></i>Mon – Sun · 9:00 AM – 9:00 PM</span>
-                    </div>
-                </article>
-                <article class="about-branch-card">
-                    <div class="about-branch-top">
-                        <span class="about-branch-badge">ADDITIONAL BRANCH</span>
-                        <i class="fa-solid fa-building"></i>
-                    </div>
-                    <h3>The Beauty Salon</h3>
-                    <h4>Baramati MIDC</h4>
-                    <p>Our additional Baramati MIDC branch details will be updated as the location information becomes available.</p>
-                    <div class="about-branch-info">
-                        <span><i class="fa-solid fa-location-dot"></i>Address details coming soon</span>
-                        <span><i class="fa-solid fa-phone"></i>Contact details coming soon</span>
-                        <span><i class="fa-regular fa-clock"></i>9:00 AM – 9:00 PM</span>
-                    </div>
-                </article>
-            </div>>
+                <div class="branches-loading">
+                    Loading branches...
+                </div>
+            </div>
 
         </section>
 
@@ -2598,9 +2573,9 @@
                         <span>+91 8087646512</span>
                     </a>
 
-                    <a href="mailto:info.thebeautysalon@gmail.com">
+                    <a href="mailto:info.thebeautysaloon@gmail.com">
                         <i class="fa-regular fa-envelope"></i>
-                        <span>info.thebeautysalon@gmail.com</span>
+                        <span>info.thebeautysaloon@gmail.com</span>
                     </a>
 
                     <span>
@@ -2854,10 +2829,25 @@ document.addEventListener("DOMContentLoaded", function () {
             if (branches.length) {
                 grid.innerHTML = branches.map(renderBranch).join("");
             }
+            else {
+                grid.innerHTML = `
+                    <div class="branches-empty">
+                        <i class="fa-solid fa-location-dot"></i>
+                        <strong>No active branches available.</strong>
+                    </div>
+                `;
+            }
         })
         .catch(error => {
             console.error("About branches API error:", error);
-            /* Keep the static fallback cards when backend is unavailable. */
+
+            grid.innerHTML = `
+                <div class="branches-error">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <strong>Unable to load branches</strong>
+                    <span>Please try again later.</span>
+                </div>
+            `;
         });
     }
 });

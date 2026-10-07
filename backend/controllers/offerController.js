@@ -5,6 +5,11 @@ const pool = require("../config/database");
 
 const db = pool.promise();
 
+
+/* =========================================================
+   DAYS
+========================================================= */
+
 const DAYS = [
     "Sunday",
     "Monday",
@@ -15,36 +20,77 @@ const DAYS = [
     "Saturday"
 ];
 
+
+/* =========================================================
+   OFFERS IMAGE DIRECTORY
+========================================================= */
+
 const OFFERS_IMAGE_DIRECTORY = path.join(
     __dirname,
     "../../frontend/assets/images/offers"
 );
 
 
+/* =========================================================
+   ENSURE IMAGE DIRECTORY EXISTS
+========================================================= */
+
 function ensureImageDirectory() {
+
     if (!fs.existsSync(OFFERS_IMAGE_DIRECTORY)) {
-        fs.mkdirSync(OFFERS_IMAGE_DIRECTORY, {
-            recursive: true
-        });
+
+        fs.mkdirSync(
+            OFFERS_IMAGE_DIRECTORY,
+            {
+                recursive: true
+            }
+        );
+
     }
+
 }
 
 
+/* =========================================================
+   DELETE IMAGE FILE
+========================================================= */
+
 function deleteImageFile(filename) {
+
     if (!filename) {
         return;
     }
 
-    const safeFilename = path.basename(filename);
+
+    /*
+       Only use the filename part.
+
+       This prevents paths such as:
+       ../../something
+       from being used accidentally.
+    */
+
+    const safeFilename = path.basename(
+        String(filename)
+    );
+
 
     const filePath = path.join(
         OFFERS_IMAGE_DIRECTORY,
         safeFilename
     );
 
+
     if (fs.existsSync(filePath)) {
+
         fs.unlinkSync(filePath);
+
+        console.log(
+            `🗑️ Offer image deleted: ${safeFilename}`
+        );
+
     }
+
 }
 
 
@@ -53,7 +99,9 @@ function deleteImageFile(filename) {
 ========================================================= */
 
 const getAllOffers = async (req, res) => {
+
     try {
+
         const [rows] = await db.query(
             `
             SELECT
@@ -76,11 +124,17 @@ const getAllOffers = async (req, res) => {
             `
         );
 
+
         return res.status(200).json({
+
             success: true,
+
             count: rows.length,
+
             data: rows
+
         });
+
 
     } catch (error) {
 
@@ -89,12 +143,19 @@ const getAllOffers = async (req, res) => {
             error
         );
 
+
         return res.status(500).json({
+
             success: false,
+
             message: "Failed to fetch offers.",
+
             error: error.message
+
         });
+
     }
+
 };
 
 
@@ -103,9 +164,13 @@ const getAllOffers = async (req, res) => {
 ========================================================= */
 
 const getTodayOffer = async (req, res) => {
+
     try {
 
-        const today = DAYS[new Date().getDay()];
+        const today = DAYS[
+            new Date().getDay()
+        ];
+
 
         const [rows] = await db.query(
             `
@@ -127,18 +192,27 @@ const getTodayOffer = async (req, res) => {
         if (rows.length === 0) {
 
             return res.status(404).json({
+
                 success: false,
-                message: `No active offer found for ${today}.`,
+
+                message:
+                    `No active offer found for ${today}.`,
+
                 day: today
+
             });
 
         }
 
 
         return res.status(200).json({
+
             success: true,
+
             day: today,
+
             data: rows[0]
+
         });
 
 
@@ -149,12 +223,20 @@ const getTodayOffer = async (req, res) => {
             error
         );
 
+
         return res.status(500).json({
+
             success: false,
-            message: "Failed to fetch today's offer.",
+
+            message:
+                "Failed to fetch today's offer.",
+
             error: error.message
+
         });
+
     }
+
 };
 
 
@@ -163,6 +245,7 @@ const getTodayOffer = async (req, res) => {
 ========================================================= */
 
 const getOfferByDay = async (req, res) => {
+
     try {
 
         const day = String(
@@ -173,8 +256,11 @@ const getOfferByDay = async (req, res) => {
         if (!DAYS.includes(day)) {
 
             return res.status(400).json({
+
                 success: false,
+
                 message: "Invalid day."
+
             });
 
         }
@@ -199,16 +285,22 @@ const getOfferByDay = async (req, res) => {
         if (rows.length === 0) {
 
             return res.status(404).json({
+
                 success: false,
+
                 message: "Offer not found."
+
             });
 
         }
 
 
         return res.status(200).json({
+
             success: true,
+
             data: rows[0]
+
         });
 
 
@@ -219,12 +311,19 @@ const getOfferByDay = async (req, res) => {
             error
         );
 
+
         return res.status(500).json({
+
             success: false,
+
             message: "Failed to fetch offer.",
+
             error: error.message
+
         });
+
     }
+
 };
 
 
@@ -243,21 +342,35 @@ const saveOffer = async (req, res) => {
         ).trim();
 
 
+        /* ---------------------------------------------
+           VALIDATE DAY
+        --------------------------------------------- */
+
         if (!DAYS.includes(day)) {
 
             return res.status(400).json({
+
                 success: false,
+
                 message: "Invalid day."
+
             });
 
         }
 
 
+        /* ---------------------------------------------
+           VALIDATE IMAGE
+        --------------------------------------------- */
+
         if (!req.file) {
 
             return res.status(400).json({
+
                 success: false,
+
                 message: "Please select an image."
+
             });
 
         }
@@ -265,8 +378,13 @@ const saveOffer = async (req, res) => {
 
         ensureImageDirectory();
 
+
         uploadedFilename = req.file.filename;
 
+
+        /* ---------------------------------------------
+           GET EXISTING OFFER
+        --------------------------------------------- */
 
         const [existingRows] = await db.query(
             `
@@ -280,6 +398,10 @@ const saveOffer = async (req, res) => {
             [day]
         );
 
+
+        /* ---------------------------------------------
+           UPDATE EXISTING OFFER
+        --------------------------------------------- */
 
         if (existingRows.length > 0) {
 
@@ -302,17 +424,29 @@ const saveOffer = async (req, res) => {
             );
 
 
+            /*
+               Delete old image after successful DB update.
+            */
+
             if (
                 existingImage &&
                 existingImage !== uploadedFilename
             ) {
 
-                deleteImageFile(existingImage);
+                deleteImageFile(
+                    existingImage
+                );
 
             }
 
 
-        } else {
+        }
+
+        /* ---------------------------------------------
+           CREATE NEW OFFER
+        --------------------------------------------- */
+
+        else {
 
             await db.query(
                 `
@@ -338,21 +472,54 @@ const saveOffer = async (req, res) => {
         }
 
 
+        /* ---------------------------------------------
+           SUCCESS RESPONSE
+        --------------------------------------------- */
+
         return res.status(200).json({
+
             success: true,
-            message: `${day} offer image saved successfully.`,
+
+            message:
+                `${day} offer image saved successfully.`,
+
             data: {
+
                 day: day,
+
                 image: uploadedFilename,
+
                 status: "ACTIVE"
+
             }
+
         });
 
 
     } catch (error) {
 
+        /*
+           If database operation fails after the new
+           image has been uploaded, remove the new file.
+        */
+
         if (uploadedFilename) {
-            deleteImageFile(uploadedFilename);
+
+            try {
+
+                deleteImageFile(
+                    uploadedFilename
+                );
+
+            } catch (fileError) {
+
+                console.error(
+                    "❌ Failed to remove uploaded image after error:",
+                    fileError
+                );
+
+            }
+
         }
 
 
@@ -363,11 +530,17 @@ const saveOffer = async (req, res) => {
 
 
         return res.status(500).json({
+
             success: false,
+
             message: "Failed to save offer.",
+
             error: error.message
+
         });
+
     }
+
 };
 
 
@@ -384,19 +557,31 @@ const deleteOffer = async (req, res) => {
         ).trim();
 
 
+        /* ---------------------------------------------
+           VALIDATE DAY
+        --------------------------------------------- */
+
         if (!DAYS.includes(day)) {
 
             return res.status(400).json({
+
                 success: false,
+
                 message: "Invalid day."
+
             });
 
         }
 
 
+        /* ---------------------------------------------
+           GET EXISTING IMAGE
+        --------------------------------------------- */
+
         const [rows] = await db.query(
             `
             SELECT
+                id,
                 image
             FROM offer_images
             WHERE day = ?
@@ -406,15 +591,31 @@ const deleteOffer = async (req, res) => {
         );
 
 
+        /* ---------------------------------------------
+           NO OFFER FOUND
+        --------------------------------------------- */
+
         if (rows.length === 0) {
 
             return res.status(404).json({
+
                 success: false,
-                message: "No offer image found for this day."
+
+                message:
+                    "No offer image found for this day."
+
             });
 
         }
 
+
+        const imageFilename =
+            rows[0].image;
+
+
+        /* ---------------------------------------------
+           DELETE DATABASE RECORD
+        --------------------------------------------- */
 
         await db.query(
             `
@@ -425,14 +626,48 @@ const deleteOffer = async (req, res) => {
         );
 
 
-        deleteImageFile(
-            rows[0].image
-        );
+        /* ---------------------------------------------
+           DELETE ACTUAL IMAGE FILE
+        --------------------------------------------- */
 
+        if (imageFilename) {
+
+            try {
+
+                deleteImageFile(
+                    imageFilename
+                );
+
+            } catch (fileError) {
+
+                /*
+                   DB record is already deleted.
+
+                   Log file deletion error instead of
+                   returning a false database failure.
+                */
+
+                console.error(
+                    "❌ Failed to delete physical offer image:",
+                    fileError
+                );
+
+            }
+
+        }
+
+
+        /* ---------------------------------------------
+           SUCCESS RESPONSE
+        --------------------------------------------- */
 
         return res.status(200).json({
+
             success: true,
-            message: `${day} offer image deleted successfully.`
+
+            message:
+                `${day} offer image deleted successfully.`
+
         });
 
 
@@ -445,11 +680,18 @@ const deleteOffer = async (req, res) => {
 
 
         return res.status(500).json({
+
             success: false,
-            message: "Failed to delete offer.",
+
+            message:
+                "Failed to delete offer.",
+
             error: error.message
+
         });
+
     }
+
 };
 
 
@@ -458,9 +700,15 @@ const deleteOffer = async (req, res) => {
 ========================================================= */
 
 module.exports = {
+
     getAllOffers,
+
     getTodayOffer,
+
     getOfferByDay,
+
     saveOffer,
+
     deleteOffer
+
 };

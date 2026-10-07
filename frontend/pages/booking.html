@@ -1522,6 +1522,115 @@ button{cursor:pointer}
     .about-mobile-menu [class*=" fa-"] {
         color: #D4AF37 !important;
     }
+    /* WEEKLY OFFER IMAGE LIGHTBOX */
+
+.offer-image {
+    cursor: zoom-in;
+}
+
+.offer-lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 30px;
+
+    background: rgba(0, 0, 0, 0.94);
+
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+
+    transition: opacity .25s ease, visibility .25s ease;
+}
+
+.offer-lightbox.show {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+}
+
+.offer-lightbox img {
+    max-width: min(1100px, 92vw);
+    max-height: 88vh;
+
+    width: auto;
+    height: auto;
+
+    object-fit: contain;
+
+    border: 1px solid rgba(212,175,55,.7);
+    border-radius: 12px;
+
+    box-shadow: 0 25px 80px rgba(0,0,0,.7);
+}
+
+.offer-lightbox-close {
+    position: absolute;
+    top: 22px;
+    right: 25px;
+
+    width: 44px;
+    height: 44px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border: 1px solid #d4af37;
+    border-radius: 50%;
+
+    background: rgba(0,0,0,.85);
+    color: #d4af37;
+
+    font-size: 18px;
+    cursor: pointer;
+
+    z-index: 2;
+}
+
+.offer-lightbox-close:hover {
+    background: #d4af37;
+    color: #000;
+}
+
+.offer-lightbox-caption {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+
+    transform: translateX(-50%);
+
+    color: #d4af37;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 1px;
+}
+
+@media (max-width: 767px) {
+
+    .offer-lightbox {
+        padding: 15px;
+    }
+
+    .offer-lightbox img {
+        max-width: 94vw;
+        max-height: 82vh;
+        border-radius: 8px;
+    }
+
+    .offer-lightbox-close {
+        top: 15px;
+        right: 15px;
+
+        width: 40px;
+        height: 40px;
+    }
+}
 }
 </style>
 
@@ -1994,9 +2103,9 @@ Confirm Appointment
                     <span>+91 8087646512</span>
                 </a>
 
-                <a href="mailto:info.thebeautysalon@gmail.com">
+                <a href="mailto:info.thebeautysaloon@gmail.com">
                     <i class="fa-regular fa-envelope"></i>
-                    <span>info.thebeautysalon@gmail.com</span>
+                    <span>info.thebeautysaloon@gmail.com</span>
                 </a>
 
                 <span>
@@ -2805,6 +2914,7 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     refreshOffers();
+    
 
     mobile.addEventListener("input", function () {
         this.value = this.value.replace(/[^0-9]/g, "").slice(0, 10);
@@ -3012,6 +3122,65 @@ document.addEventListener("DOMContentLoaded", function () {
             customer.email ||
             customer.email_address ||
             "";
+    }
+});
+</script>
+
+<!-- Offer Image Lightbox -->
+<div class="offer-lightbox" id="offerLightbox">
+    <button type="button" class="offer-lightbox-close" id="offerLightboxClose">
+        <i class="fa-solid fa-xmark"></i>
+    </button>
+
+    <img id="offerLightboxImage" src="" alt="Weekly Offer">
+
+    <div class="offer-lightbox-caption" id="offerLightboxCaption"></div>
+</div>
+
+<script>
+/* Weekly Offer Image Lightbox */
+
+const offerLightbox = document.getElementById("offerLightbox");
+const offerLightboxImage = document.getElementById("offerLightboxImage");
+const offerLightboxClose = document.getElementById("offerLightboxClose");
+const offerLightboxCaption = document.getElementById("offerLightboxCaption");
+
+document.querySelectorAll(".offer-image").forEach(function (image) {
+
+    image.addEventListener("click", function () {
+
+        offerLightboxImage.src = image.src;
+        offerLightboxImage.alt = image.alt || "Weekly Offer";
+
+        const slide = image.closest(".offer-slide");
+        const badge = slide ? slide.querySelector(".offer-badge") : null;
+
+        offerLightboxCaption.textContent =
+            badge ? badge.textContent : "Weekly Offer";
+
+        offerLightbox.classList.add("show");
+
+        document.body.style.overflow = "hidden";
+    });
+});
+
+function closeOfferLightbox() {
+    offerLightbox.classList.remove("show");
+    offerLightboxImage.src = "";
+    document.body.style.overflow = "";
+}
+
+offerLightboxClose.addEventListener("click", closeOfferLightbox);
+
+offerLightbox.addEventListener("click", function (event) {
+    if (event.target === offerLightbox) {
+        closeOfferLightbox();
+    }
+});
+
+document.addEventListener("keydown", function (event) {
+    if (event.key === "Escape" && offerLightbox.classList.contains("show")) {
+        closeOfferLightbox();
     }
 });
 </script>

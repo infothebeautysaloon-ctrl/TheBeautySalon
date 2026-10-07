@@ -2288,19 +2288,7 @@ body{
                     class="filter-select"
                     id="branchFilter"
                 >
-
-                    <option value="all">
-                        All Branches
-                    </option>
-
-                    <option value="Baramati">
-                        Baramati
-                    </option>
-
-                    <option value="Baramati MIDC">
-                        Baramati MIDC
-                    </option>
-
+                    <option value="all">Loading branches...</option>
                 </select>
 
 
@@ -2499,16 +2487,8 @@ body{
                                 Branch
                             </label>
 
-                            <select id="imageBranch">
-
-                                <option value="1">
-                                    Baramati
-                                </option>
-
-                                <option value="2">
-                                    Baramati MIDC
-                                </option>
-
+                            <select id="imageBranch" required>
+                                <option value="">Loading branches...</option>
                             </select>
 
                         </div>
@@ -2643,7 +2623,9 @@ body{
 
     <script>
         document.addEventListener("DOMContentLoaded", function () {
-            const API = "https://thebeautysalon.onrender.com/api/gallery";
+            const API_BASE = "https://the-beauty-salon.onrender.com/api";
+            const API = `${API_BASE}/gallery`;
+            const BRANCH_API = `${API_BASE}/branches`;
 
             const sidebar = document.getElementById("adminSidebar");
             const sidebarToggle = document.getElementById("sidebarToggle");
@@ -2676,6 +2658,7 @@ body{
 
             const previewBox = document.querySelector(".preview-box");
             let allImages = [];
+            let allBranches = [];
             let editingId = null;
             let selectedImageValue = "";
 
@@ -2774,7 +2757,7 @@ body{
                         ? image
                         : `/${image}`;
 
-                    return `https://thebeautysalon.onrender.com${uploadPath}`;
+                    return `https://the-beauty-salon.onrender.com${uploadPath}`;
                 }
 
                 let fileName = image
@@ -2824,7 +2807,9 @@ body{
                 }).length;
 
                 const featured = allImages.filter(function (item) {
-                    return Number(item.featured) === 1;
+                    return item.featured === true ||
+                        Number(item.featured) === 1 ||
+                        String(item.featured).toLowerCase() === "true";
                 }).length;
 
                 const categories = new Set(
@@ -2841,36 +2826,74 @@ body{
                 galleryCategories.textContent = categories;
             }
 
-            function populateBranchFilter() {
-                const current = branchFilter.value;
+            function getApiRows(result) {
+                if (Array.isArray(result)) return result;
+                if (Array.isArray(result?.data)) return result.data;
+                if (Array.isArray(result?.branches)) return result.branches;
+                return [];
+            }
 
-                const branches = [
-                    ...new Map(
-                        allImages
-                            .filter(function (item) {
-                                return item.branch_id && item.branch;
-                            })
-                            .map(function (item) {
-                                return [item.branch_id, item.branch];
-                            })
-                    ).entries()
-                ];
+            function isActiveBranch(branch) {
+                return branch.is_active === undefined ||
+                    branch.is_active === null ||
+                    branch.is_active === true ||
+                    Number(branch.is_active) === 1 ||
+                    String(branch.is_active).toUpperCase() === "ACTIVE";
+            }
+
+            function populateBranchControls() {
+                const currentFilter = branchFilter.value;
+                const currentForm = imageBranch.value;
 
                 branchFilter.innerHTML = '<option value="all">All Branches</option>';
+                imageBranch.innerHTML = '<option value="">Select Branch</option>';
 
-                branches.forEach(function (entry) {
-                    const option = document.createElement("option");
-                    option.value = entry[0];
-                    option.textContent = entry[1];
-                    branchFilter.appendChild(option);
+                allBranches.forEach(function (branch) {
+                    const id = String(branch.id);
+                    const name = branch.name || `Branch ${id}`;
+
+                    const filterOption = document.createElement("option");
+                    filterOption.value = id;
+                    filterOption.textContent = name;
+                    branchFilter.appendChild(filterOption);
+
+                    if (isActiveBranch(branch)) {
+                        const formOption = document.createElement("option");
+                        formOption.value = id;
+                        formOption.textContent = name;
+                        imageBranch.appendChild(formOption);
+                    }
                 });
 
-                if (
-                    [...branchFilter.options].some(function (option) {
-                        return option.value === current;
-                    })
-                ) {
-                    branchFilter.value = current;
+                if ([...branchFilter.options].some(function (option) {
+                    return option.value === currentFilter;
+                })) {
+                    branchFilter.value = currentFilter;
+                }
+
+                if ([...imageBranch.options].some(function (option) {
+                    return option.value === currentForm;
+                })) {
+                    imageBranch.value = currentForm;
+                }
+            }
+
+            async function loadBranches() {
+                try {
+                    const response = await fetch(BRANCH_API);
+                    const result = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(result?.message || "Failed to load branches.");
+                    }
+
+                    allBranches = getApiRows(result);
+                    populateBranchControls();
+                } catch (error) {
+                    console.error("BRANCH API ERROR:", error);
+                    allBranches = [];
+                    branchFilter.innerHTML = '<option value="all">Unable to load branches</option>';
+                    imageBranch.innerHTML = '<option value="">Unable to load branches</option>';
                 }
             }
 
@@ -2942,7 +2965,9 @@ body{
                     const status = String(item.status || "INACTIVE").toUpperCase();
                     const branchText = item.branch || "—";
                     const branchId = item.branch_id || "";
-                    const featured = Number(item.featured) === 1;
+                    const featured = item.featured === true ||
+                        Number(item.featured) === 1 ||
+                        String(item.featured).toLowerCase() === "true";
 
                     return `
                         <article
@@ -3075,12 +3100,9 @@ body{
                         );
                     }
 
-                    allImages = Array.isArray(result.data)
-                        ? result.data
-                        : [];
+                    allImages = getApiRows(result);
 
                     updateSummary();
-                    populateBranchFilter();
                     renderImages();
 
                 } catch (error) {
@@ -3145,9 +3167,20 @@ body{
 
                 imageTitle.value = item.title || "";
                 imageCategory.value = item.category || "Salon";
-                imageBranch.value = item.branch_id || "";
+                const itemBranchId = String(item.branch_id || "");
+                if (itemBranchId && ![...imageBranch.options].some(function (option) {
+                    return option.value === itemBranchId;
+                })) {
+                    const fallbackOption = document.createElement("option");
+                    fallbackOption.value = itemBranchId;
+                    fallbackOption.textContent = item.branch || `Branch ${itemBranchId}`;
+                    imageBranch.appendChild(fallbackOption);
+                }
+                imageBranch.value = itemBranchId;
                 imageStatus.value = String(item.status || "ACTIVE").toUpperCase();
-                featuredImage.checked = Number(item.featured) === 1;
+                featuredImage.checked = item.featured === true ||
+                    Number(item.featured) === 1 ||
+                    String(item.featured).toLowerCase() === "true";
 
                 const existingImage = imageSource(item.image);
 
@@ -3401,6 +3434,7 @@ body{
                 }
             });
 
+            loadBranches();
             loadGallery();
         });
 
