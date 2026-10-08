@@ -2761,6 +2761,32 @@ if (lightboxClose) {
         const GALLERY_API = "https://thebeautysalon.onrender.com/api/gallery";
         const GALLERY_IMAGE_FOLDER = "../assets/images/gallery/";
 
+        /*
+           FIXED LOCAL GALLERY IMAGES
+           Keep these files inside:
+           frontend/assets/images/gallery/
+
+           gallery-01.jpg
+           gallery-02.jpg
+           ...
+           gallery-15.jpg
+        */
+        const FIXED_GALLERY_IMAGES = Array.from(
+            { length: 15 },
+            function (_, index) {
+                const number = String(index + 1).padStart(2, "0");
+
+                return {
+                    id: "fixed-gallery-" + number,
+                    title: "Gallery Image " + number,
+                    category: "Salon",
+                    image: GALLERY_IMAGE_FOLDER + "gallery-" + number + ".jpg",
+                    status: "ACTIVE",
+                    fixed: true
+                };
+            }
+        );
+
         let databaseGalleryImages = [];
         let activeGalleryFilter = "all";
 
@@ -2997,9 +3023,15 @@ if (lightboxClose) {
                 </div>
             `;
 
+            /*
+               Fixed local images are always available first.
+               Admin-uploaded Gallery images are added after them
+               when the backend API is available.
+            */
+            const fixedImages = FIXED_GALLERY_IMAGES.slice();
+
             try {
                 const response = await fetch(GALLERY_API);
-
                 const result = await response.json();
 
                 if (!response.ok || !result.success) {
@@ -3009,7 +3041,7 @@ if (lightboxClose) {
                     );
                 }
 
-                databaseGalleryImages =
+                const uploadedImages =
                     Array.isArray(result.data)
                         ? result.data.filter(function (item) {
                             return String(item.status || "ACTIVE")
@@ -3017,38 +3049,26 @@ if (lightboxClose) {
                         })
                         : [];
 
-                activeGalleryFilter = "all";
-
-                buildGalleryFilters();
-                renderDatabaseGallery();
+                databaseGalleryImages =
+                    fixedImages.concat(uploadedImages);
 
             } catch (error) {
+                /*
+                   If the backend is unavailable, do not remove
+                   the 15 fixed local gallery images.
+                */
                 console.error(
                     "GALLERY DATABASE ERROR:",
                     error
                 );
 
-                galleryGrid.innerHTML = `
-                    <div class="gallery-error">
-                        <i class="fa-solid fa-triangle-exclamation"></i>
-                        <strong>Unable to load gallery images.</strong>
-                        <span>Please make sure the backend server is running.</span>
-                        <button type="button" id="retryGallery">
-                            Retry
-                        </button>
-                    </div>
-                `;
-
-                const retryButton =
-                    document.getElementById("retryGallery");
-
-                if (retryButton) {
-                    retryButton.addEventListener(
-                        "click",
-                        loadDatabaseGallery
-                    );
-                }
+                databaseGalleryImages = fixedImages;
             }
+
+            activeGalleryFilter = "all";
+
+            buildGalleryFilters();
+            renderDatabaseGallery();
         }
 
         loadDatabaseGallery();
@@ -3302,10 +3322,6 @@ document.addEventListener("DOMContentLoaded", function () {
     );
 });
 </script>
-
-
-
-
 
 </body>
 </html>
