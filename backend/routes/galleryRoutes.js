@@ -1,3 +1,4 @@
+
 const express = require("express");
 const multer = require("multer");
 const path = require("path");
@@ -13,6 +14,7 @@ const {
     deleteGalleryImage
 } = require("../controllers/galleryController");
 
+// Upload directory
 const uploadDirectory = path.join(
     __dirname,
     "../uploads/gallery"
@@ -24,6 +26,28 @@ if (!fs.existsSync(uploadDirectory)) {
     });
 }
 
+// Supported image formats
+const allowedMimeTypes = [
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "image/gif",
+    "image/bmp",
+    "image/x-ms-bmp",
+    "image/avif"
+];
+
+const allowedExtensions = [
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".webp",
+    ".gif",
+    ".bmp",
+    ".avif"
+];
+
+// File storage configuration
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, uploadDirectory);
@@ -36,49 +60,51 @@ const storage = multer.diskStorage({
 
         const originalName = path
             .basename(file.originalname, extension)
-            .replace(/[^a-zA-Z0-9-_]/g, "-")
+            .replace(/[^a-zA-Z0-9_-]/g, "-")
             .replace(/-+/g, "-")
+            .replace(/^-|-$/g, "")
             .toLowerCase();
 
+        const safeName = originalName || "gallery-image";
+
         const filename =
-            `${Date.now()}-${originalName}${extension}`;
+            `${Date.now()}-${safeName}${extension}`;
 
         cb(null, filename);
     }
 });
 
+// Validate uploaded file
 const fileFilter = (req, file, cb) => {
-    const allowedExtensions = [
-        ".jpg",
-        ".jpeg",
-        ".png",
-        ".webp",
-        ".gif"
-    ];
-
     const extension = path
         .extname(file.originalname)
         .toLowerCase();
 
-    if (allowedExtensions.includes(extension)) {
-        cb(null, true);
-    } else {
-        cb(
-            new Error(
-                "Only JPG, JPEG, PNG, WEBP and GIF images are allowed."
-            )
-        );
+    if (
+        allowedMimeTypes.includes(file.mimetype) &&
+        allowedExtensions.includes(extension)
+    ) {
+        return cb(null, true);
     }
+
+    cb(
+        new Error(
+            "Unsupported image format. Use JPG, JPEG, PNG, WEBP, GIF, BMP or AVIF."
+        )
+    );
 };
 
+// Multer configuration
 const upload = multer({
     storage,
     fileFilter,
     limits: {
-        fileSize: 5 * 1024 * 1024
+        fileSize: 5 * 1024 * 1024,
+        files: 1
     }
 });
 
+// Gallery APIs
 router.get("/", getAllGalleryImages);
 
 router.get("/:id", getGalleryImageById);
@@ -95,9 +121,32 @@ router.put(
     updateGalleryImage
 );
 
-router.delete(
-    "/:id",
-    deleteGalleryImage
-);
+router.delete("/:id", deleteGalleryImage);
+
+// Upload error handling
+router.use((error, req, res, next) => {
+    if (error instanceof multer.MulterError) {
+        if (error.code === "LIMIT_FILE_SIZE") {
+            return res.status(400).json({
+                success: false,
+                message: "Image size must be 5 MB or less."
+            });
+        }
+
+        return res.status(400).json({
+            success: false,
+            message: error.message
+        });
+    }
+
+    if (error) {
+        return res.status(400).json({
+            success: false,
+            message: error.message || "Image upload failed."
+        });
+    }
+
+    next();
+});
 
 module.exports = router;
