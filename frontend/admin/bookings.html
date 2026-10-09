@@ -2178,14 +2178,28 @@ document.addEventListener("DOMContentLoaded", function () {
         if (!confirmed) return;
 
         try {
-            const response = await fetch(`${API_URL}/${encodeURIComponent(bookingId)}/status`, {
+            // Keep the existing status endpoint for COMPLETED.
+            // Use the dedicated admin-cancel endpoint only for CANCELLED.
+            const isAdminCancellation = newStatus === "CANCELLED";
+            const endpoint = isAdminCancellation
+                ? `${API_URL}/${encodeURIComponent(bookingId)}/admin-cancel`
+                : `${API_URL}/${encodeURIComponent(bookingId)}/status`;
+
+            const requestOptions = {
                 method: "PUT",
                 headers: {
-                    "Content-Type": "application/json",
                     "Accept": "application/json"
-                },
-                body: JSON.stringify({ status: newStatus })
-            });
+                }
+            };
+
+            // The admin-cancel endpoint does not need a request body.
+            // Completed status keeps the original request body and endpoint.
+            if (!isAdminCancellation) {
+                requestOptions.headers["Content-Type"] = "application/json";
+                requestOptions.body = JSON.stringify({ status: newStatus });
+            }
+
+            const response = await fetch(endpoint, requestOptions);
 
             const payload = await response.json().catch(() => ({}));
 

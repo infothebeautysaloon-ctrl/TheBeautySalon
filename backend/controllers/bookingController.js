@@ -1603,6 +1603,71 @@ async function createBooking(req, res) {
     }
 }
 
+
+async function adminCancelBooking(req, res) {
+    try {
+        const bookingId = Number(req.params.id);
+
+        if (!Number.isInteger(bookingId) || bookingId <= 0) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid booking ID."
+            });
+        }
+
+        const [result] = await pool.promise().query(
+            `UPDATE bookings
+             SET
+                status = 'CANCELLED',
+                updated_at = CURRENT_TIMESTAMP
+             WHERE id = ?
+               AND status = 'CONFIRMED'`,
+            [bookingId]
+        );
+
+        if (result.affectedRows === 0) {
+            const [rows] = await pool.promise().query(
+                `SELECT id, status
+                 FROM bookings
+                 WHERE id = ?
+                 LIMIT 1`,
+                [bookingId]
+            );
+
+            if (rows.length === 0) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Booking not found."
+                });
+            }
+
+            return res.status(409).json({
+                success: false,
+                message:
+                    `Booking cannot be cancelled. Current status: ${rows[0].status}.`
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Booking cancelled successfully.",
+            data: {
+                id: bookingId,
+                status: "CANCELLED"
+            }
+        });
+    } catch (error) {
+        console.error("ADMIN CANCEL BOOKING ERROR:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Failed to cancel booking.",
+            error: error.message
+        });
+    }
+}
+
+
 async function updateBookingStatus(req, res) {
     try {
         const requestedStatus =
@@ -2271,6 +2336,7 @@ module.exports = {
     getBookingById,
     createBooking,
     updateBookingStatus,
+    adminCancelBooking,
     getMyAppointments,
     getMyBookingHistory,
     getBookingAvailability

@@ -1,3 +1,4 @@
+
 const express = require("express");
 
 const router = express.Router();
@@ -7,6 +8,7 @@ const {
     getBookingById,
     createBooking,
     updateBookingStatus,
+    adminCancelBooking,
     getMyAppointments,
     getMyBookingHistory,
     getBookingAvailability
@@ -55,6 +57,17 @@ router.get(
 
 
 // =====================================================
+// ADMIN CANCEL BOOKING
+// Allows cancellation of older CONFIRMED bookings
+// =====================================================
+
+router.put(
+    "/:id/admin-cancel",
+    adminCancelBooking
+);
+
+
+// =====================================================
 // SINGLE BOOKING
 // =====================================================
 
@@ -76,6 +89,7 @@ router.post(
 
 // =====================================================
 // UPDATE BOOKING STATUS
+// Existing customer flow remains unchanged
 // =====================================================
 
 router.put(

@@ -4676,11 +4676,81 @@ body{
             }
 
             /* =====================================================
-               GALLERY DATABASE
+               HOME GALLERY
+               Fixed local images + active admin-uploaded images.
+               Other homepage logic remains unchanged.
             ====================================================== */
             async function loadHomeGallery() {
                 const grid = document.getElementById("homeGalleryGrid");
                 if (!grid) return;
+
+                const fixedGalleryImages = [
+                    { title: "Salon Interior", image: "assets/images/gallery/gallery-01.jpg" },
+                    { title: "Hair Styling", image: "assets/images/gallery/gallery-02.jpg" },
+                    { title: "Beauty Care", image: "assets/images/gallery/gallery-03.jpg" },
+                    { title: "Premium Experience", image: "assets/images/gallery/gallery-04.jpg" },
+                    { title: "Salon Gallery", image: "assets/images/gallery/gallery-05.jpg" },
+                    { title: "Hair Care", image: "assets/images/gallery/gallery-06.jpg" },
+                    { title: "Professional Styling", image: "assets/images/gallery/gallery-07.jpg" },
+                    { title: "Beauty Services", image: "assets/images/gallery/gallery-08.jpg" },
+                    { title: "Salon Experience", image: "assets/images/gallery/gallery-09.jpg" },
+                    { title: "Hair and Beauty", image: "assets/images/gallery/gallery-10.jpg" },
+                    { title: "Modern Salon", image: "assets/images/gallery/gallery-11.jpg" },
+                    { title: "Haircut Styling", image: "assets/images/gallery/gallery-12.jpg" },
+                    { title: "Skin Care", image: "assets/images/gallery/gallery-13.jpg" },
+                    { title: "Salon Services", image: "assets/images/gallery/gallery-14.jpg" },
+                    { title: "The Beauty Salon", image: "assets/images/gallery/gallery-15.jpg" }
+                ];
+
+                function imageUrl(value) {
+                    const raw = String(value || "").trim();
+
+                    if (!raw) return "";
+
+                    if (/^https?:\/\//i.test(raw)) return raw;
+
+                    if (raw.startsWith("/uploads/")) {
+                        return "https://thebeautysalon.onrender.com" + raw;
+                    }
+
+                    if (raw.startsWith("/assets/")) {
+                        return raw.slice(1);
+                    }
+
+                    if (raw.startsWith("../assets/")) {
+                        return raw.slice(3);
+                    }
+
+                    if (raw.startsWith("assets/")) {
+                        return raw;
+                    }
+
+                    return "assets/images/gallery/" + raw.split("/").pop();
+                }
+
+                function renderHomeGallery(images) {
+                    const visibleImages = images.slice(0, 4);
+
+                    grid.innerHTML = visibleImages.map(function (item, index) {
+                        const title = item.title || item.category || "Salon Gallery";
+                        const image = imageUrl(item.image);
+
+                        return `
+                            <div class="gallery-tile ${index === 0 ? "gallery-large" : ""}">
+                                <div class="gallery-placeholder">
+                                    <img src="${escapeHtml(image)}"
+                                         alt="${escapeHtml(title)}"
+                                         loading="lazy"
+                                         onerror="this.style.display='none';">
+                                    <span>${escapeHtml(title)}</span>
+                                </div>
+                            </div>
+                        `;
+                    }).join("");
+                }
+
+                // Show local fixed images immediately, even if the API is unavailable.
+                renderHomeGallery(fixedGalleryImages);
 
                 try {
                     const response = await fetch(`${API_BASE}/gallery`, {
@@ -4692,69 +4762,28 @@ body{
                     }
 
                     const payload = await response.json();
-
-                    const gallery = apiRows(payload).filter(function (item) {
+                    const uploadedGalleryImages = apiRows(payload).filter(function (item) {
                         const status = String(item.status || "ACTIVE").toUpperCase();
                         return status === "ACTIVE" || status === "OPEN" || status === "1";
                     });
 
-                    if (!gallery.length) {
-                        showApiMessage(grid, "No gallery images found in the database.", "fa-images");
-                        return;
-                    }
+                    // Match the public Gallery page: fixed local images remain available
+                    // and active admin-uploaded images are included after them.
+                    const combinedGallery = fixedGalleryImages.concat(
+                        uploadedGalleryImages.map(function (item) {
+                            return {
+                                title: item.title || item.category || "Salon Gallery",
+                                category: item.category || "",
+                                image: item.image
+                            };
+                        })
+                    );
 
-                    function imageUrl(value) {
-                        const raw = String(value || "").trim();
-
-                        if (!raw) return "";
-
-                        if (/^https?:\/\//i.test(raw)) return raw;
-
-                        if (raw.startsWith("/uploads/")) {
-                            return "https://thebeautysalon.onrender.com" + raw;
-                        }
-
-                        if (raw.startsWith("/assets/")) {
-                            return ".." + raw;
-                        }
-
-                        if (raw.startsWith("../assets/")) {
-                            return raw;
-                        }
-
-                        if (raw.startsWith("assets/")) {
-                            return "../" + raw;
-                        }
-
-                        return "assets/images/gallery/" + raw.split("/").pop();
-                    }
-
-                    grid.innerHTML = gallery.slice(0, 4).map(function (item, index) {
-
-                        const title = item.title || item.category || "Salon Gallery";
-                        const image = imageUrl(item.image);
-
-                        return `
-                            <div class="gallery-tile ${index === 0 ? "gallery-large" : ""}">
-                                <div class="gallery-placeholder">
-
-                                    <img src="${escapeHtml(image)}"
-                                         alt="${escapeHtml(title)}"
-                                         loading="lazy"
-                                         onerror="this.style.display='none';">
-
-                                    <span>
-                                        ${escapeHtml(title)}
-                                    </span>
-
-                                </div>
-                            </div>
-                        `;
-                    }).join("");
-
+                    renderHomeGallery(combinedGallery);
                 } catch (error) {
                     console.error("GALLERY API ERROR:", error);
-                    showApiMessage(grid, "Gallery could not be loaded from the database.", "fa-triangle-exclamation");
+                    // Keep the fixed images visible when the backend/API fails.
+                    renderHomeGallery(fixedGalleryImages);
                 }
             }
 
