@@ -1,0 +1,30 @@
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+
+    <url>
+        <loc>https://thebeautysalon.in/</loc>
+    </url>
+
+    <url>
+        <loc>https://thebeautysalon.in/pages/about.html</loc>
+    </url>
+
+    <url>
+        <loc>https://thebeautysalon.in/pages/services.html</loc>
+    </url>
+
+    <url>
+        <loc>https://thebeautysalon.in/pages/branches.html</loc>
+    </url>
+
+    <url>
+        <loc>https://thebeautysalon.in/pages/gallery.html</loc>
+    </url>
+
+    <url>
+        <loc>https://thebeautysalon.in/pages/contact.html</loc>
+    </url>
+
+</urlset>
+```
